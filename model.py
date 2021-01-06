@@ -88,13 +88,18 @@ class TemplateMatching(nn.Module):
 
     def forward(self, x, t):
         batch_size = x.shape[0]
+        batch_size_t = t.shape[0]
+        assert(batch_size == t.shape[0] or t.shape[0] == 1)
         x = self.feature_x(x)
         t = self.feature_t(t)
         kernel = self.hyper(t)
-        x_out = []
-        for b in range(batch_size):
-            x_out.append(self.conv2d(x[b].unsqueeze(0), kernel[b]))
-        x_out = torch.cat(x_out, dim = 0)
+        if t.shape[0] == 1:
+            x_out = self.conv2d(x, kernel[0])
+        else:
+            x_out = []
+            for b in range(batch_size):
+                x_out.append(self.conv2d(x[b].unsqueeze(0), kernel[b]))
+            x_out = torch.cat(x_out, dim = 0)
         return x_out
 
 

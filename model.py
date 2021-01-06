@@ -1,5 +1,4 @@
 import numpy as np
-import cv2 as cv
 import torch
 import torch.nn as nn
 import torch.nn.init as init
@@ -58,18 +57,18 @@ pretrain_url = 'https://download.pytorch.org/models/vgg11-bbd30ac9.pth'
 
 
 class TemplateMatching(nn.Module):
-    def __init__():
-        super(TemplateMatching, self).__init__(z_dim = 64, output_channel = 512, pretrain = True)
+    def __init__(self, z_dim = 64, output_channel = 512, pretrain = False):
+        super(TemplateMatching, self).__init__()
         self.output_channel = output_channel
         self.z_dim = z_dim
         self.feature_t = make_layers(cfg, batch_norm=True)
         self.feature_x = make_layers(cfg, batch_norm=True)
-        self.hyper = HyperNetwork(z_dim = self.z_dim)
+        self.hyper = HyperNetwork(z_dim = self.z_dim, out_channels = self.output_channel)
         if pretrain:
             self.load_pretrain(pretrain_url)
 
     def load_pretrain(self, url):
-        pretrain_model = torch.load(url)
+        pretrain_model = torch.load_state_dict_from_url(url)
         pretrain_state_dict = pretrain_model.state_dict() 
         pretrain_keys = pretrain_state_dict.keys()
         state_dict = self.feature_t.state_dict()
@@ -82,7 +81,7 @@ class TemplateMatching(nn.Module):
         self.feature_t.load_state_dict(state_dict)
         self.feature_x.load_state_dict(state_dict)
 
-    def forward(x, t):
+    def forward(self, x, t):
         x = self.feature_x(x)
         t = self.feature_t(t)
         kernel = self.hyper(t)
@@ -94,9 +93,11 @@ class TemplateMatching(nn.Module):
 
 
 if __name__ == '__main__':
-    t = torch.randn(32, 3, 512, 512)
-    x = torch.randn(32, 3, 512, 512)
-    res = TemplateMatching(x, t)
+    t = torch.randn(8, 3, 64, 64).cuda()
+    x = torch.randn(8, 3, 64, 64).cuda()
+    model = TemplateMatching(z_dim = 64, output_channel = 512).cuda()
+    res = model(x, t)
+
     print(res.shape)
 
     

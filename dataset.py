@@ -44,19 +44,40 @@ class Pacman(data.Dataset):
         image /= self.std
         return image
 
+    def pad_to_img(self, img, template):
+        h1, w1, c = img.shape
+        h2, w2, c = template.shape
+        top = int((h1 - h2) / 2)
+        left = int((w1 - w2) / 2)
+        bottom = h1 - top
+        right = w1 - left
+        pad_template = cv2.copyMakeBorder(
+            template, top, bottom, left, right, borderType=cv2.BORDER_CONSTANT)
+        return pad_template
+
     def __getitem__(self, i):
         img = cv2.imread(self.source_files[i])
         if self.crop:
             img = img[:180, :, :]
         seudo_label = template_matching(img, self.templates_dir[self.catagory[0]],
                                         vis=False, return_ori=False)
-        img = self.input_transform(img)
+        template = cv2.imread(self.template_file[self.catagory[0]])
+        template = self.pad_to_img(img, template)
 
-        return img, seudo_label
+        img = self.input_transform(img)
+        template = self.input_transform(template)
+
+        img = cv2.resize(img, (self.base_size, self.base_size),
+                         interpolation=cv2.INTER_NEAREST)
+        template = cv2.resize(
+            template, (self.base_size, self.base_size), interpolation=cv2.INTER_NEAREST)
+        seudo_label = cv2.resize(seudo_label, (self.base_size, self.base_size),
+                         interpolation=cv2.INTER_NEAREST)
+        return img, template, seudo_label
 
 
 if __name__ == '__main__':
     pacman = Pacman()
     dataset_iter = iter(pacman)
-    img, label = next(dataset_iter)
-    print(img.shape, label.shape)
+    img, template, label = next(dataset_iter)
+    print(img.shape, template.shape, label.shape)

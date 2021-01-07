@@ -31,6 +31,7 @@ def _template_matching(img, templates, return_ori=False):
 
     img_res = cv2.rectangle(np.zeros_like(img), top_left,
                             bottom_right, (1, 1, 1), -1)
+    img_res = cv2.cvtColor(img_res, cv2.COLOR_BGR2GRAY)
 
     if return_ori:
         return img_res, res
@@ -52,6 +53,7 @@ def template_matching(img, template_dir, return_ori=False, vis=False):
         img_res, res = _template_matching(
             img, templates, return_ori=return_ori)
         if vis:
+            img_res = cv2.cvtColor(img_res, cv2.COLOR_GRAY2BGR)
             added_image = cv2.addWeighted(img, 0.6, img_res*255, 0.4, 0)
             plt.subplot(121), plt.imshow(res, cmap='gray')
             plt.title('cv2.TM_CCOEFF'), plt.xticks([]), plt.yticks([])
@@ -62,6 +64,7 @@ def template_matching(img, template_dir, return_ori=False, vis=False):
     else:
         img_res = _template_matching(img, templates)
         if vis:
+            img_res = cv2.cvtColor(img_res, cv2.COLOR_GRAY2BGR)
             added_image = cv2.addWeighted(img, 0.6, img_res * 255, 0.4, 0)
             plt.imshow(added_image[:, :, ::-1])
             plt.title('Matching Result'), plt.xticks([]), plt.yticks([])

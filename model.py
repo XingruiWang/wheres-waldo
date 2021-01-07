@@ -19,9 +19,9 @@ class HyperNetwork(nn.Module):
         self.linear_out = nn.Linear(in_features = self.z_dim, out_features = self.out_channels * self.f_size * self.f_size).cuda()
         for i in range(self.in_channels):
             self.linear_in.append(nn.Linear(in_features = self.Nz, out_features = self.z_dim).cuda())
-        self.k = []
 
     def forward(self, z):
+        k_list = []
         batch_size, c, h, w = z.shape # h = w = self.in_size
         assert(c==self.in_channels)
         assert(h * w == self.Nz)
@@ -30,9 +30,9 @@ class HyperNetwork(nn.Module):
             x = x.flatten(start_dim=1)
             a = self.linear_in[i](x)
             k = self.linear_out(a) # (b * out_channel * f_size * f_size)
-            kernel = k.view(batch_size, self.out_channels,1, self.f_size, self.f_size)
-            self.k.append(kernel)
-        K = torch.cat(self.k, dim = 2)
+            kernel = k.view(batch_size, 1, self.out_channels, self.f_size, self.f_size)
+            k_list.append(kernel)
+        K = torch.cat(k_list, dim = 1)
 
         return K # b, out, in, k, k
 
@@ -56,13 +56,15 @@ pretrain_url = 'https://download.pytorch.org/models/vgg11-bbd30ac9.pth'
 
 
 class TemplateMatching(nn.Module):
-    def __init__(self, z_dim = 64, output_channel = 512, pretrain = False):
+    def __init__(self, z_dim = 64, output_channel = 512, pretrain = False, num_classes = 1):
         super(TemplateMatching, self).__init__()
         self.output_channel = output_channel
         self.z_dim = z_dim
         self.feature_t = make_layers(cfg, batch_norm=True)
         self.feature_x = make_layers(cfg, batch_norm=True)
         self.hyper = HyperNetwork(z_dim = self.z_dim, out_channels = self.output_channel)
+        self.final = nn.Conv2d(self.output_channel, num_classes, kernel_size=1)
+
         if pretrain:
             self.load_pretrain(pretrain_url)
 
@@ -86,11 +88,11 @@ class TemplateMatching(nn.Module):
         self.feature_t.load_state_dict(state_dict)
         self.feature_x.load_state_dict(state_dict)
 
-    def forward(self, x, t):
-        batch_size = x.shape[0]
+    def forward(self, x_img, t):
+        batch_size = x_img.shape[0]
         batch_size_t = t.shape[0]
         assert(batch_size == t.shape[0] or t.shape[0] == 1)
-        x = self.feature_x(x)
+        x = self.feature_x(x_img)
         t = self.feature_t(t)
         kernel = self.hyper(t)
         if t.shape[0] == 1:
@@ -100,12 +102,15 @@ class TemplateMatching(nn.Module):
             for b in range(batch_size):
                 x_out.append(self.conv2d(x[b].unsqueeze(0), kernel[b]))
             x_out = torch.cat(x_out, dim = 0)
+        final = self.final(x_out)
+        x_out = F.interpolate(final, size = x_img.size()[2:], mode='bilinear')
+        x_out = F.softmax(x_out)
         return x_out
 
 
 if __name__ == '__main__':
-    t = torch.randn(8, 3, 512, 512).cuda()
-    x = torch.randn(8, 3, 512, 512).cuda()
+    t = torch.randn(4, 3, 512, 512).cuda()
+    x = torch.randn(4, 3, 512, 512).cuda()
     model = TemplateMatching(z_dim = 64, output_channel = 512, pretrain = False).cuda()
     res = model(x, t)
 

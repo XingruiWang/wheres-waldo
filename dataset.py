@@ -69,10 +69,12 @@ class Pacman(data.Dataset):
 
         img = cv2.resize(img, (self.base_size, self.base_size),
                          interpolation=cv2.INTER_NEAREST)
+        img = img.transpose((2,0,1))
         template = cv2.resize(
-            template, (self.base_size, self.base_size), interpolation=cv2.INTER_NEAREST)
+            template, (self.base_size, self.base_size), interpolation=cv2.INTER_NEAREST).transpose((2,0,1))
         seudo_label = cv2.resize(seudo_label, (self.base_size, self.base_size),
-                         interpolation=cv2.INTER_NEAREST)
+                         interpolation=cv2.INTER_NEAREST)[:, :, np.newaxis]
+        seudo_label = seudo_label.transpose((2,0,1)).astype(np.float32)
         return img, template, seudo_label
 
 

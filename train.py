@@ -1,4 +1,3 @@
-from ccoeff import template_matching
 from model import TemplateMatching
 
 import torch

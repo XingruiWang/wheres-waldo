@@ -106,7 +106,7 @@ class TemplateMatching(nn.Module):
 if __name__ == '__main__':
     t = torch.randn(8, 3, 512, 512).cuda()
     x = torch.randn(8, 3, 512, 512).cuda()
-    model = TemplateMatching(z_dim = 64, output_channel = 32, pretrain = False).cuda()
+    model = TemplateMatching(z_dim = 64, output_channel = 512, pretrain = False).cuda()
     res = model(x, t)
 
     print(res.shape)

@@ -38,8 +38,10 @@ def _template_matching(img, templates, return_ori=False):
         return img_res
 
 
-def template_matching(img_dir, template_dir, return_ori=False, vis=False):
-    img = cv2.imread(img_dir)
+def template_matching(img, template_dir, return_ori=False, vis=False):
+    if isinstance(img, str):
+        img = cv2.imread(img)
+        
     img = img[:180, :, :]
 
     templates = []
@@ -68,8 +70,8 @@ def template_matching(img_dir, template_dir, return_ori=False, vis=False):
 
 
 if __name__ == '__main__':
-    template_dir = '/data/templates/pacman/'
+    template_dir = 'data/templates/pacman/'
     img = 'data/source/02.png'
     img_res = template_matching(img, template_dir,
                                 vis=False, return_ori=False)
-    print(img_res.shape)
+    print(img_res.shape, np.max(img_res))

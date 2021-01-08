@@ -141,7 +141,7 @@ class TemplateMatching(nn.Module):
                 x_out.append(self.conv2d(x[b].unsqueeze(0), kernel[b]))
             x_out = torch.cat(x_out, dim=0)
         final = self.final(x_out)
-        x_out = F.interpolate(final, size=x_img.size()[2:], mode='bilinear')
+        x_out = F.interpolate(final, size=x_img.size()[2:], mode='bicubic')
         x_out = F.softmax(x_out, dim=1)
         return x_out
 

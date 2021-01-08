@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 import random
 from ccoeff import template_matching
-
+import random
 import torch
 from torch.nn import functional as F
 from torch.utils import data
@@ -16,16 +16,19 @@ class Pacman(data.Dataset):
                  catagory=['pacman'],
                  crop=True,
                  base_size=512,
+                 pad=True,
                  mean=[0.485, 0.456, 0.406],
-                 std=[0.229, 0.224, 0.225]):
+                 std=[0.229, 0.224, 0.225],
+                 random_template=True):
 
         self.base_size = base_size
         self.crop = crop
         self.catagory = catagory
-
+        self.pad = pad
         self.mean = mean
         self.std = std
         self.dir = dir
+        self.random_template = random_template
 
         self.source_files = [os.path.join(self.dir, "source", f) for f in os.listdir(
             os.path.join(self.dir, "source"))]
@@ -34,7 +37,7 @@ class Pacman(data.Dataset):
         self.template_file = dict(zip(catagory, [os.path.join(
             self.dir, 'templates', c, c + '1.png') for c in catagory]))
 
-        print('\nFinish loading dataset, %d in total \n'%(self.__len__()))
+        print('\nFinish loading dataset, %d in total \n' % (self.__len__()))
 
     def __len__(self):
         return len(self.source_files)
@@ -63,20 +66,29 @@ class Pacman(data.Dataset):
             img = img[:180, :, :]
         seudo_label = template_matching(img, self.templates_dir[self.catagory[0]],
                                         vis=False, return_ori=False)
-        template = cv2.imread(self.template_file[self.catagory[0]])
-        template = self.pad_to_img(img, template)
+        template_name = os.listdir(self.templates_dir[self.catagory[0]])
+        if self.random_template:
+            template_id = random.randint(0, len(template_name)-1)
+        else:
+            template_id = 0
+
+        template = cv2.imread(os.path.join(
+            self.templates_dir[self.catagory[0]], template_name[template_id]))
+
+        if self.pad:
+            template = self.pad_to_img(img, template)
 
         img = self.input_transform(img)
         template = self.input_transform(template)
 
         img = cv2.resize(img, (self.base_size, self.base_size),
                          interpolation=cv2.INTER_NEAREST)
-        img = img.transpose((2,0,1))
+        img = img.transpose((2, 0, 1))
         template = cv2.resize(
-            template, (self.base_size, self.base_size), interpolation=cv2.INTER_NEAREST).transpose((2,0,1))
+            template, (self.base_size, self.base_size), interpolation=cv2.INTER_NEAREST).transpose((2, 0, 1))
         seudo_label = cv2.resize(seudo_label, (self.base_size, self.base_size),
-                         interpolation=cv2.INTER_NEAREST)[:, :, np.newaxis]
-        seudo_label = seudo_label.transpose((2,0,1)).astype(np.float32)
+                                 interpolation=cv2.INTER_NEAREST)[:, :, np.newaxis]
+        seudo_label = seudo_label.transpose((2, 0, 1)).astype(np.float32)
         return img, template, seudo_label
 
 

@@ -34,6 +34,8 @@ class Pacman(data.Dataset):
         self.template_file = dict(zip(catagory, [os.path.join(
             self.dir, 'templates', c, c + '1.png') for c in catagory]))
 
+        print('\nFinish loading dataset, %d in total \n'%(self.__len__()))
+
     def __len__(self):
         return len(self.source_files)
 

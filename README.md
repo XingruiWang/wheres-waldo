@@ -12,6 +12,7 @@ And then resize to (512, 512) ...
 
 ```python
 from model import TemplateMatching
+
 t = torch.randn(4, 3, 512, 512).cuda()
 x = torch.randn(4, 3, 512, 512).cuda()
 net = TemplateMatching(
@@ -30,6 +31,8 @@ Require one source image and a folder containing all of the probable apperences 
 Return the location of target (only the most likely one).
 
 ```python
+from ccoeff import template_matching
+
 template_dir = 'data/templates/pacman/'
 img = 'source.png'
 res = template_matching(img, template_dir,

@@ -33,18 +33,18 @@ def train_step(net, pacman_loader, criterion, optimizer, epoch, best_iou):
     iou = 0.0
     for i, data in enumerate(pacman_loader):
         optimizer.zero_grad()
-        img, template, seudo_label = data
-        (img, template, seudo_label) = (
-            img.cuda(), template.cuda(), seudo_label.cuda())
+        img, template, pseudo_label = data
+        (img, template, pseudo_label) = (
+            img.cuda(), template.cuda(), pseudo_label.cuda())
         y = net(img, template)
         y_pred = y.permute(0, 2, 3, 1)
         y_pred = y_pred.contiguous().view(-1, 2)
-        y_true = seudo_label.long().view(-1)
+        y_true = pseudo_label.long().view(-1)
         loss = criterion(y_pred, y_true)
         loss.backward()
         optimizer.step()
         running_loss += loss.item()
-        iou += IoU(seudo_label, y)
+        iou += IoU(pseudo_label, y)
 
         if i % 5 == 4:
             print('\nEpoch [%d/%d], iter %d: avg loss = %.3f, avg iou = %.3f, best_iou = %.3f' %
@@ -108,15 +108,15 @@ def val(net, monster_loader, criterion, render=False):
     val_loss = 0.0
     iou = 0.0
     for i, data in enumerate(monster_loader):
-        img, template, seudo_label = data
-        (img, template, seudo_label) = (
-            img.cuda(), template.cuda(), seudo_label.cuda())
+        img, template, pseudo_label = data
+        (img, template, pseudo_label) = (
+            img.cuda(), template.cuda(), pseudo_label.cuda())
         y = net(img, template)
         y_pred = y.permute(0, 2, 3, 1)
         y_pred = y_pred.contiguous().view(-1, 2)
-        y_true = seudo_label.long().view(-1)
+        y_true = pseudo_label.long().view(-1)
         loss = criterion(y_pred, y_true)
-        iou += IoU(seudo_label, y)
+        iou += IoU(pseudo_label, y)
         val_loss += loss.item()
 
         if render:
@@ -183,7 +183,7 @@ if __name__ == '__main__':
     if checkpoint:
         print('Loading checkpoint')
         checkpoint = torch.load(checkpoint)
-        net.load_state_dict(checkpoint['TemplateMatching'], strict=False)
+        net.load_state_dict(checkpoint['TemplateMatching'])
         optimizer.load_state_dict(checkpoint['optimizer'])
         # best_iou = checkpoint['best_iou']
         best_iou = 0.7

@@ -69,10 +69,10 @@ class Pacman(data.Dataset):
             img = img[:180, :, :]
 
         c_id = random.randint(0, len(self.catagory) - 1)
-        seudo_label = template_matching(img, self.templates_dir[self.catagory[c_id]],
+        pseudo_label = template_matching(img, self.templates_dir[self.catagory[c_id]],
                                         vis=False, return_ori=False)
 
-        # cv2.imwrite('output/seudo_label/%s-%s.png'%(name, self.catagory[c_id]), seudo_label * 255)
+        # cv2.imwrite('output/pseudo_label/%s-%s.png'%(name, self.catagory[c_id]), pseudo_label * 255)
         template_name = os.listdir(self.templates_dir[self.catagory[c_id]])
         if self.random_template:
             template_id = random.randint(0, len(template_name)-1)
@@ -93,11 +93,11 @@ class Pacman(data.Dataset):
         img = img.transpose((2, 0, 1))
         template = cv2.resize(
             template, (self.base_size, self.base_size), interpolation=cv2.INTER_NEAREST).transpose((2, 0, 1))
-        seudo_label = cv2.resize(seudo_label, (self.base_size, self.base_size),
+        pseudo_label = cv2.resize(pseudo_label, (self.base_size, self.base_size),
                                  interpolation=cv2.INTER_NEAREST)[:, :, np.newaxis]
-        seudo_label = seudo_label.transpose((2, 0, 1)).astype(np.float32)
+        pseudo_label = pseudo_label.transpose((2, 0, 1)).astype(np.float32)
 
-        return img, template, seudo_label
+        return img, template, pseudo_label
 
 
 if __name__ == '__main__':

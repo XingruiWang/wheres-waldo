@@ -10,6 +10,8 @@ def argument(img):
                   cv2.ROTATE_180]:
         r_img = cv2.rotate(img, roate)
         imgs.append(r_img)
+    imgs.append(img[:, ::-1, :])
+    imgs.append(img[::-1, :, :])
     return imgs
 
 
@@ -19,9 +21,9 @@ def _template_matching(img, templates, return_ori=False):
     res = None
     for template in templates:
         if res is None:
-            res = cv2.matchTemplate(img, template, cv2.TM_CCOEFF)
+            res = cv2.matchTemplate(img, template, cv2.TM_CCOEFF_NORMED)
         else:
-            tmp = cv2.matchTemplate(img, template, cv2.TM_CCOEFF)
+            tmp = cv2.matchTemplate(img, template, cv2.TM_CCOEFF_NORMED) # cv2.TM_SQDIFF_NORMED; TM_CCOEFF_NORMED
             res = np.maximum(tmp, res)
 
     min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
@@ -31,6 +33,16 @@ def _template_matching(img, templates, return_ori=False):
 
     img_res = cv2.rectangle(np.zeros_like(img), top_left,
                             bottom_right, (1, 1, 1), -1)
+
+    test_img = img[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0], :]
+
+
+    dis = [np.mean(test_img.astype(np.int32) - template.astype(np.int32), axis=2) for template in templates]
+
+    if max([np.sum(d * d < 1) for d in dis]) < h * w * 0.7:
+        img_res = np.zeros_like(img)
+        # print("do not find")
+
     img_res = cv2.cvtColor(img_res, cv2.COLOR_BGR2GRAY)
 
     if return_ori:
@@ -42,7 +54,7 @@ def _template_matching(img, templates, return_ori=False):
 def template_matching(img, template_dir, return_ori=False, vis=False):
     if isinstance(img, str):
         img = cv2.imread(img)
-        
+
     img = img[:180, :, :]
 
     templates = []

@@ -13,7 +13,7 @@ from torch.utils import data
 class Pacman(data.Dataset):
     def __init__(self,
                  dir='data',
-                 catagory=['pacman'],
+                 catagory=['pacman', 'monster'],
                  crop=True,
                  base_size=512,
                  pad=True,
@@ -29,13 +29,12 @@ class Pacman(data.Dataset):
         self.std = std
         self.dir = dir
         self.random_template = random_template
+        self.num_classes = len(catagory)
 
         self.source_files = [os.path.join(self.dir, "source", f) for f in os.listdir(
             os.path.join(self.dir, "source"))]
         self.templates_dir = dict(
             zip(catagory, [os.path.join(self.dir, 'templates', c) for c in catagory]))
-        self.template_file = dict(zip(catagory, [os.path.join(
-            self.dir, 'templates', c, c + '1.png') for c in catagory]))
 
         print('\nFinish loading dataset, %d in total \n' % (self.__len__()))
 
@@ -61,19 +60,24 @@ class Pacman(data.Dataset):
         return pad_template
 
     def __getitem__(self, i):
+        name = self.source_files[i].split('/')[-1][:-4]
         img = cv2.imread(self.source_files[i])
         if self.crop:
             img = img[:180, :, :]
-        seudo_label = template_matching(img, self.templates_dir[self.catagory[0]],
+
+        c_id = random.randint(0, len(self.catagory) - 1)
+        seudo_label = template_matching(img, self.templates_dir[self.catagory[c_id]],
                                         vis=False, return_ori=False)
-        template_name = os.listdir(self.templates_dir[self.catagory[0]])
+
+        # cv2.imwrite('output/seudo_label/%s-%s.png'%(name, self.catagory[c_id]), seudo_label * 255)
+        template_name = os.listdir(self.templates_dir[self.catagory[c_id]])
         if self.random_template:
             template_id = random.randint(0, len(template_name)-1)
         else:
             template_id = 0
 
         template = cv2.imread(os.path.join(
-            self.templates_dir[self.catagory[0]], template_name[template_id]))
+            self.templates_dir[self.catagory[c_id]], template_name[template_id]))
 
         if self.pad:
             template = self.pad_to_img(img, template)
@@ -89,6 +93,7 @@ class Pacman(data.Dataset):
         seudo_label = cv2.resize(seudo_label, (self.base_size, self.base_size),
                                  interpolation=cv2.INTER_NEAREST)[:, :, np.newaxis]
         seudo_label = seudo_label.transpose((2, 0, 1)).astype(np.float32)
+
         return img, template, seudo_label
 
 

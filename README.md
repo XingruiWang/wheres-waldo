@@ -24,7 +24,7 @@ net.load_state_dict(checkpoint['TemplateMatching'])
 res = net(x, t) # binary map 
 ```
 
-### CCOEFF template matching (seudo label)
+### CCOEFF template matching (Pseudo label)
 
 Require one source image and a folder containing all of the probable apperences of target.
 

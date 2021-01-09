@@ -9,9 +9,11 @@ import numpy as np
 import os
 
 
-batch_size = 2
-epochs = 100
+batch_size = 4
+epochs = 200
 output = 'output'
+checkpoint = 'output/checkpoint/model_best.pth'
+checkpoint = ''
 
 
 def IoU(y, pred):
@@ -24,10 +26,10 @@ def IoU(y, pred):
     return intersect / union
 
 
-def train(net, pacman_loader, monster_loader, criterion, optimizer, epochs=50, best_iou = 0):
+def train(net, pacman_loader, monster_loader, criterion, optimizer, epochs=50, best_iou=0):
     net.train()
     running_loss = 0.0
-    best_loss = 10
+    best_loss = 1.0
     iou = 0.0
     best_iou = best_iou
     for epoch in range(epochs):
@@ -47,7 +49,7 @@ def train(net, pacman_loader, monster_loader, criterion, optimizer, epochs=50, b
             iou += IoU(seudo_label, y)
 
             if i % 5 == 4:
-                print('Epoch [%d/%d], iter %d: avg loss = %.3f, avg iou = %.3f' %
+                print('\nEpoch [%d/%d], iter %d: avg loss = %.3f, avg iou = %.3f' %
                       (epoch + 1, epochs, i + 1, running_loss / 5, iou / 5))
                 running_loss = 0.0
                 iou = 0.0
@@ -68,10 +70,12 @@ def train(net, pacman_loader, monster_loader, criterion, optimizer, epochs=50, b
                     cv.imwrite('%s/pred/pred-%d.png' %
                                (output, i * batch_size + b), added_image)
 
-        val_loss, val_iou = val(net, monster_loader, criterion, epoch % 20 == 19)
+        val_loss, val_iou = val(net, monster_loader,
+                                criterion, epoch % 20 == 19)
 
         if val_iou > best_iou:
             checkpoint = {'TemplateMatching': net.state_dict(),
+                          'optimizer': optimizer,
                           'val_loss': val_loss,
                           'best_iou': val_iou
                           }
@@ -82,7 +86,7 @@ def train(net, pacman_loader, monster_loader, criterion, optimizer, epochs=50, b
             best_iou = val_iou
 
 
-def val(net, monster_loader, criterion, render = False):
+def val(net, monster_loader, criterion, render=False):
     # net.eval()
     val_loss = 0.0
     iou = 0.0
@@ -104,7 +108,7 @@ def val(net, monster_loader, criterion, render = False):
             vis_img += [0.485, 0.456, 0.406]
             vis_img *= 255
             vis = y.permute(0, 2, 3, 1).detach().cpu().numpy()
-            vis = np.argmax(vis, axis = -1).astype(np.uint8)
+            vis = np.argmax(vis, axis=-1).astype(np.uint8)
 
             for b in range(batch_size):
                 vis_mini = vis[b]
@@ -122,6 +126,7 @@ def val(net, monster_loader, criterion, render = False):
 
 
 if __name__ == '__main__':
+
     catagory = ['pacman',
                 'monster-purple', 'monster-red', 'monster-yellow', 'monster-blue']
     # catagory = ['pacman']
@@ -130,11 +135,7 @@ if __name__ == '__main__':
                            pretrain='pretrained/vgg11_bn.pth',
                            num_classes=2,
                            freezed_pretrain=True).cuda()
-    checkpoint = {}
-    checkpoint = torch.load('output/checkpoint/model_best.pth')
-    net.load_state_dict(checkpoint['TemplateMatching'])
-    best_iou = checkpoint.get('best_iou', 0.0)
-    print('best_iou' , best_iou)
+
     pacman_set = Pacman(dir='data', pad=True,
                         random_template=True, catagory=catagory)
     pacman_loader = data.DataLoader(
@@ -158,6 +159,16 @@ if __name__ == '__main__':
     weights = [1, 30]
     weights = torch.FloatTensor(weights).cuda()
     criterion = CrossEntropyLoss(weight=weights)
+
+    best_iou = 0
+
+    if checkpoint:
+        checkpoint = torch.load(checkpoint)
+        net.load_state_dict(checkpoint['TemplateMatching'])
+        best_iou = checkpoint['best_iou']
+        optimizer = checkpoint['optimizer']
+    print('best_iou', best_iou)
+
     train(net, pacman_loader, monster_loader, criterion=criterion,
-          optimizer=optimizer, epochs=epochs, best_iou = best_iou)
+          optimizer=optimizer, epochs=epochs, best_iou=best_iou)
     # val(net, monster_loader, criterion)

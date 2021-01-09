@@ -1,16 +1,16 @@
 # Where's Waldo?
 
-A Pytorch implementing of [A Deep Learning approach to Template Matching](http://cs231n.stanford.edu/reports/2017/pdfs/817.pdf)
-
-
 ### VGG template matching
+
+A Pytorch implementing of [A Deep Learning approach to Template Matching](http://cs231n.stanford.edu/reports/2017/pdfs/817.pdf)
 
 Require one template image and one source image.
 
 Template image needs to be **padded** to the same size as source image.
 
+And then resize to (512, 512) ...
 
-```
+```python
 from model import TemplateMatching
 t = torch.randn(4, 3, 512, 512).cuda()
 x = torch.randn(4, 3, 512, 512).cuda()

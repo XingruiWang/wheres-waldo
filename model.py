@@ -27,6 +27,7 @@ class HyperNetwork(nn.Module):
         for i in range(self.in_channels):
             self.linear_in.append(
                 nn.Linear(in_features=self.Nz, out_features=self.z_dim).cuda())
+        self.linear_in = nn.ModuleList(self.linear_in)
 
     def forward(self, z):
         k_list = []
@@ -80,6 +81,8 @@ class TemplateMatching(nn.Module):
         self.feature_x = make_layers(cfg, batch_norm=True)
         self.hyper = HyperNetwork(
             z_dim=self.z_dim, out_channels=self.output_channel)
+        self.hyper_bn = nn.Sequential(nn.BatchNorm2d(self.output_channel),
+                                          nn.ReLU(inplace=True))
         self.final = nn.Conv2d(self.output_channel, num_classes, kernel_size=1)
 
         if init_weights:
@@ -108,8 +111,7 @@ class TemplateMatching(nn.Module):
 
     def conv2d(self, x, kernel):
         x = F.conv2d(x, kernel, padding=1)
-        x = nn.BatchNorm2d(self.output_channel).cuda()(x)
-        x = nn.ReLU(inplace=True).cuda()(x)
+        x = self.hyper_bn(x)
         return x
 
     def load_pretrain(self, pretrain):

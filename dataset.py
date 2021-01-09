@@ -13,6 +13,7 @@ from torch.utils import data
 class Pacman(data.Dataset):
     def __init__(self,
                  dir='data',
+                 mode = 'train',
                  catagory=['pacman', 'monster'],
                  crop=True,
                  base_size=512,
@@ -28,17 +29,19 @@ class Pacman(data.Dataset):
         self.mean = mean
         self.std = std
         self.dir = dir
+        self.mode = mode
         self.random_template = random_template
         self.num_classes = len(catagory)
 
-        self.source_files = [os.path.join(self.dir, "source", f) for f in os.listdir(
-            os.path.join(self.dir, "source"))]
+        self.source_files = [os.path.join(self.dir, "source-" + mode, f) for f in os.listdir(
+            os.path.join(self.dir, "source-" + mode))]
         self.templates_dir = dict(
             zip(catagory, [os.path.join(self.dir, 'templates', c) for c in catagory]))
 
         print('\nFinish loading dataset, %d in total \n' % (self.__len__()))
 
     def __len__(self):
+        # return len(self.source_files * self.num_classes)
         return len(self.source_files)
 
     def input_transform(self, image):

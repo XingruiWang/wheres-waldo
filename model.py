@@ -82,13 +82,14 @@ class TemplateMatching(nn.Module):
         self.hyper = HyperNetwork(
             z_dim=self.z_dim, out_channels=self.output_channel)
         self.hyper_bn = nn.Sequential(nn.BatchNorm2d(self.output_channel),
-                                          nn.ReLU(inplace=True))
+                                      nn.ReLU(inplace=True))
         self.final = nn.Conv2d(self.output_channel, num_classes, kernel_size=1)
+        self.sigmoid = nn.Sigmoid()
 
         if init_weights:
             self._initialize_weights()
         if pretrain:
-            self.load_pretrain(pretrain)
+            self.load_vgg(pretrain)
         if freezed_pretrain:
             for param in self.feature_t.parameters():
                 param.requires_grad = False
@@ -114,7 +115,7 @@ class TemplateMatching(nn.Module):
         x = self.hyper_bn(x)
         return x
 
-    def load_pretrain(self, pretrain):
+    def load_vgg(self, pretrain):
         pretrain_state_dict = torch.load(pretrain)
         pretrain_keys = pretrain_state_dict.keys()
         state_dict = self.feature_t.state_dict()
@@ -135,17 +136,27 @@ class TemplateMatching(nn.Module):
         x = self.feature_x(x_img)
         t = self.feature_t(t)
         kernel = self.hyper(t)
-        if t.shape[0] == 1:
-            x_out = self.conv2d(x, kernel[0])
-        else:
-            x_out = []
-            for b in range(batch_size):
-                x_out.append(self.conv2d(x[b].unsqueeze(0), kernel[b]))
-            x_out = torch.cat(x_out, dim=0)
-        final = self.final(x_out)
-        x_out = F.interpolate(final, size=x_img.size()[2:], mode='bicubic')
-        x_out = F.softmax(x_out, dim=1)
+        x_out = []
+        for b in range(batch_size):
+            x_out.append(self.conv2d(x[b].unsqueeze(0), kernel[b]))
+        x_out = torch.cat(x_out, dim=0)
+        x_out = self.final(x_out)
+
+        x_out = F.interpolate(x_out, size=x_img.size()[2:], mode='bilinear')
+        x_out = self.sigmoid(x_out)
         return x_out
+
+    def load_pretrain(self, state_dict, exclude, strict, log=True):
+        pretrain_state_dict = self.state_dict()
+        for k in state_dict.keys():
+            if not exclude or k not in exclude:
+                pretrain_state_dict[k] = state_dict[k]
+                if log:
+                    print('load pretrain %s' % (k))
+            else:
+                if log:
+                    print('Skip %s' % (k))
+        self.load_state_dict(pretrain_state_dict, strict=strict)
 
 
 if __name__ == '__main__':

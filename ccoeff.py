@@ -73,6 +73,7 @@ def template_matching(img, template_dir, return_ori=False, vis=False):
             plt.subplot(122), plt.imshow(added_image[:, :, ::-1])
             plt.title('Matching Result'), plt.xticks([]), plt.yticks([])
             plt.show()
+        return img_res, res
     else:
         img_res = _template_matching(img, templates)
         if vis:

@@ -4,6 +4,22 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 
+'''
+import cv2 as cv
+import numpy as np
+from matplotlib import pyplot as plt
+img_rgb = cv.imread('mario.png')
+img_gray = cv.cvtColor(img_rgb, cv.COLOR_BGR2GRAY)
+template = cv.imread('mario_coin.png',0)
+w, h = template.shape[::-1]
+res = cv.matchTemplate(img_gray,template,cv.TM_CCOEFF_NORMED)
+threshold = 0.8
+loc = np.where( res >= threshold)
+for pt in zip(*loc[::-1]):
+    cv.rectangle(img_rgb, pt, (pt[0] + w, pt[1] + h), (0,0,255), 2)
+cv.imwrite('res.png',img_rgb)
+
+'''
 def argument(img):
     imgs = []
     for roate in [cv2.ROTATE_90_COUNTERCLOCKWISE, cv2.ROTATE_90_CLOCKWISE,
@@ -21,9 +37,9 @@ def _template_matching(img, templates, return_ori=False):
     res = None
     for template in templates:
         if res is None:
-            res = cv2.matchTemplate(img, template, cv2.TM_CCOEFF_NORMED)
+            res = cv2.matchTemplate(img, template, cv2.TM_CCORR_NORMED)
         else:
-            tmp = cv2.matchTemplate(img, template, cv2.TM_CCOEFF_NORMED) # cv2.TM_SQDIFF_NORMED; TM_CCOEFF_NORMED
+            tmp = cv2.matchTemplate(img, template, cv2.TM_CCORR_NORMED) # cv2.TM_SQDIFF_NORMED; TM_CCOEFF_NORMED
             res = np.maximum(tmp, res)
 
     min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
@@ -73,6 +89,7 @@ def template_matching(img, template_dir, return_ori=False, vis=False):
             plt.subplot(122), plt.imshow(added_image[:, :, ::-1])
             plt.title('Matching Result'), plt.xticks([]), plt.yticks([])
             plt.show()
+        return img_res, res
     else:
         img_res = _template_matching(img, templates)
         if vis:

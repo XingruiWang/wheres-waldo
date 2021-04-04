@@ -20,7 +20,13 @@ for pt in zip(*loc[::-1]):
 cv.imwrite('res.png',img_rgb)
 
 '''
+
+
 def argument(img):
+    '''
+    argument data to different direction
+    1 image -> 6 images
+    '''
     imgs = []
     for roate in [cv2.ROTATE_90_COUNTERCLOCKWISE, cv2.ROTATE_90_CLOCKWISE,
                   cv2.ROTATE_180]:
@@ -31,7 +37,13 @@ def argument(img):
     return imgs
 
 
-def _template_matching(img, templates, return_ori=False):
+def _template_matching_old(img, templates, return_ori=False):
+    '''
+    Drawbacks:
+        1. Can only locate one ROI;
+        2. Detect error by the similar between color of each pixel.
+    Has change to `_template_matching()`
+    '''
     H, W, C = img.shape
     h, w, c = templates[0].shape
     res = None
@@ -39,7 +51,8 @@ def _template_matching(img, templates, return_ori=False):
         if res is None:
             res = cv2.matchTemplate(img, template, cv2.TM_CCORR_NORMED)
         else:
-            tmp = cv2.matchTemplate(img, template, cv2.TM_CCORR_NORMED) # cv2.TM_SQDIFF_NORMED; TM_CCOEFF_NORMED
+            # cv2.TM_SQDIFF_NORMED; TM_CCOEFF_NORMED
+            tmp = cv2.matchTemplate(img, template, cv2.TM_CCORR_NORMED)
             res = np.maximum(tmp, res)
 
     min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
@@ -51,9 +64,52 @@ def _template_matching(img, templates, return_ori=False):
                             bottom_right, (1, 1, 1), -1)
 
     test_img = img[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0], :]
+    dis = [np.mean(test_img.astype(np.int32) - template.astype(np.int32), axis=2)
+           for template in templates]
+
+    if max([np.sum(d * d < 1) for d in dis]) < h * w * 0.7:
+        img_res = np.zeros_like(img)
+        # print("do not find")
+
+    img_res = cv2.cvtColor(img_res, cv2.COLOR_BGR2GRAY)
+
+    if return_ori:
+        return img_res, res
+    else:
+        return img_res
 
 
-    dis = [np.mean(test_img.astype(np.int32) - template.astype(np.int32), axis=2) for template in templates]
+def _template_matching(img, templates, return_ori=False):
+    H, W, C = img.shape
+    h, w, c = templates[0].shape
+    res = None
+    for template in templates:
+        if res is None:
+            res = cv2.matchTemplate(img, template, cv2.TM_CCORR_NORMED)
+        else:
+            # cv2.TM_SQDIFF_NORMED; TM_CCOEFF_NORMED
+            tmp = cv2.matchTemplate(img, template, cv2.TM_CCORR_NORMED)
+            res = np.maximum(tmp, res)
+
+    # Now we get `res`, the result (0-1 map) of matching
+    # Detect the ROI by a fixed 0.8, the same as the paper
+
+    threshold = 0.8
+    loc = np.where(res >= threshold)
+    for pt in zip(*loc[::-1]):
+        cv.rectangle(img, pt, (pt[0] + w, pt[1] + h), (0, 0, 255), 2)
+    cv.imwrite('res.png', img)
+
+    min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
+
+    top_left = max_loc
+    bottom_right = (top_left[0] + w, top_left[1] + h)
+
+    img_res = cv2.rectangle(np.zeros_like(img), top_left,
+                            bottom_right, (1, 1, 1), -1)
+
+    dis = [np.mean(test_img.astype(np.int32) - template.astype(np.int32), axis=2)
+           for template in templates]
 
     if max([np.sum(d * d < 1) for d in dis]) < h * w * 0.7:
         img_res = np.zeros_like(img)

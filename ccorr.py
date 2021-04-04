@@ -85,10 +85,10 @@ def _template_matching(img, templates, return_ori=False):
     res = None
     for template in templates:
         if res is None:
-            res = cv2.matchTemplate(img, template, cv2.TM_CCORR_NORMED)
+            res = cv2.matchTemplate(img, template, cv2.TM_CCOEFF_NORMED)
         else:
             # cv2.TM_SQDIFF_NORMED; TM_CCOEFF_NORMED
-            tmp = cv2.matchTemplate(img, template, cv2.TM_CCORR_NORMED)
+            tmp = cv2.matchTemplate(img, template, cv2.TM_CCOEFF_NORMED) # TM_CCORR_NORMED
             res = np.maximum(tmp, res)
 
     # Now we get `res`, the result (0-1 map) of matching
@@ -96,10 +96,11 @@ def _template_matching(img, templates, return_ori=False):
 
     threshold = 0.8
     loc = np.where(res >= threshold)
+    img_res = np.zeros_like(img)
     for pt in zip(*loc[::-1]):
-        cv.rectangle(img, pt, (pt[0] + w, pt[1] + h), (0, 0, 255), 2)
-    cv.imwrite('res.png', img)
+        img_res = cv2.rectangle(img_res, pt, (pt[0] + w, pt[1] + h), (1, 1, 1), -1)
 
+    '''
     min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
 
     top_left = max_loc
@@ -107,23 +108,17 @@ def _template_matching(img, templates, return_ori=False):
 
     img_res = cv2.rectangle(np.zeros_like(img), top_left,
                             bottom_right, (1, 1, 1), -1)
-
-    dis = [np.mean(test_img.astype(np.int32) - template.astype(np.int32), axis=2)
-           for template in templates]
-
-    if max([np.sum(d * d < 1) for d in dis]) < h * w * 0.7:
-        img_res = np.zeros_like(img)
-        # print("do not find")
+    '''
 
     img_res = cv2.cvtColor(img_res, cv2.COLOR_BGR2GRAY)
-
+    print(np.max(res))
     if return_ori:
         return img_res, res
     else:
         return img_res
 
 
-def template_matching(img, template_dir, return_ori=False, vis=False):
+def template_matching(img, template_dir, return_ori=False, vis=False, argumentation = True):
     if isinstance(img, str):
         img = cv2.imread(img)
 
@@ -132,7 +127,11 @@ def template_matching(img, template_dir, return_ori=False, vis=False):
     templates = []
     for t_file in os.listdir(template_dir):
         template = cv2.imread(os.path.join(template_dir, t_file))
-        templates.extend(argument(template))
+        if argumentation:
+            templates.extend(argument(template))
+        else:
+            templates.extend([template])
+
     if return_ori:
         img_res, res = _template_matching(
             img, templates, return_ori=return_ori)
@@ -140,7 +139,7 @@ def template_matching(img, template_dir, return_ori=False, vis=False):
             img_res = cv2.cvtColor(img_res, cv2.COLOR_GRAY2BGR)
             added_image = cv2.addWeighted(img, 0.6, img_res*255, 0.4, 0)
             plt.subplot(121), plt.imshow(res, cmap='gray')
-            plt.title('cv2.TM_CCOEFF'), plt.xticks([]), plt.yticks([])
+            plt.title('cv2.TM_CCORR_NORMED'), plt.xticks([]), plt.yticks([])
 
             plt.subplot(122), plt.imshow(added_image[:, :, ::-1])
             plt.title('Matching Result'), plt.xticks([]), plt.yticks([])
@@ -158,8 +157,8 @@ def template_matching(img, template_dir, return_ori=False, vis=False):
 
 
 if __name__ == '__main__':
-    template_dir = 'data/templates/pacman/'
-    img = 'data/source/02.png'
-    img_res = template_matching(img, template_dir,
-                                vis=False, return_ori=False)
+    template_dir = 'data/templates/monster-red/'
+    img = 'data/source-train/00.png'
+    img_res, _ = template_matching(img, template_dir,
+                                vis=True, return_ori=True, argumentation=True)
     print(img_res.shape, np.max(img_res))

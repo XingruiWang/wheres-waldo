@@ -4,12 +4,29 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 
+'''
+import cv2 as cv
+import numpy as np
+from matplotlib import pyplot as plt
+img_rgb = cv.imread('mario.png')
+img_gray = cv.cvtColor(img_rgb, cv.COLOR_BGR2GRAY)
+template = cv.imread('mario_coin.png',0)
+w, h = template.shape[::-1]
+res = cv.matchTemplate(img_gray,template,cv.TM_CCOEFF_NORMED)
+threshold = 0.8
+loc = np.where( res >= threshold)
+for pt in zip(*loc[::-1]):
+    cv.rectangle(img_rgb, pt, (pt[0] + w, pt[1] + h), (0,0,255), 2)
+cv.imwrite('res.png',img_rgb)
+'''
+
+
 def argument(img):
     '''
     argument data to different direction
     1 image -> 6 images
     '''
-    imgs = []
+    imgs = [img]
     for roate in [cv2.ROTATE_90_COUNTERCLOCKWISE, cv2.ROTATE_90_CLOCKWISE,
                   cv2.ROTATE_180]:
         r_img = cv2.rotate(img, roate)
@@ -61,7 +78,7 @@ def _template_matching_old(img, templates, return_ori=False):
         return img_res
 
 
-def _template_matching(img, templates, return_ori=False):
+def _template_matching(img, templates, threshold, return_ori=False):
     H, W, C = img.shape
     h, w, c = templates[0].shape
     res = None
@@ -76,38 +93,28 @@ def _template_matching(img, templates, return_ori=False):
     # Now we get `res`, the result (0-1 map) of matching
     # Detect the ROI by a fixed 0.8, the same as the paper
 
-    threshold = 0.8
     loc = np.where(res >= threshold)
     img_res = np.zeros_like(img)
     for pt in zip(*loc[::-1]):
         img_res = cv2.rectangle(img_res, pt, (pt[0] + w, pt[1] + h), (1, 1, 1), -1)
 
-    '''
-    min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
-
-    top_left = max_loc
-    bottom_right = (top_left[0] + w, top_left[1] + h)
-
-    img_res = cv2.rectangle(np.zeros_like(img), top_left,
-                            bottom_right, (1, 1, 1), -1)
-    '''
-
     img_res = cv2.cvtColor(img_res, cv2.COLOR_BGR2GRAY)
-    print(np.max(res))
     if return_ori:
         return img_res, res
     else:
         return img_res
 
 
-def template_matching(img, template_dir, return_ori=False, vis=False, argumentation = True):
+def template_matching(img, template_dir, threshold = 0.8, return_ori=False, vis=False, argumentation = True):
     if isinstance(img, str):
         img = cv2.imread(img)
 
-    img = img[:180, :, :]
+#     img = img[:180, :, :]
 
     templates = []
     for t_file in os.listdir(template_dir):
+        if t_file[-3:] != "png":
+            continue
         template = cv2.imread(os.path.join(template_dir, t_file))
         if argumentation:
             templates.extend(argument(template))
@@ -116,7 +123,7 @@ def template_matching(img, template_dir, return_ori=False, vis=False, argumentat
 
     if return_ori:
         img_res, res = _template_matching(
-            img, templates, return_ori=return_ori)
+            img, templates, threshold = threshold, return_ori=return_ori)
         if vis:
             img_res = cv2.cvtColor(img_res, cv2.COLOR_GRAY2BGR)
             added_image = cv2.addWeighted(img, 0.6, img_res*255, 0.4, 0)

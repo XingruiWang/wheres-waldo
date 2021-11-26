@@ -6,6 +6,8 @@
 
 <img src="img/waldo.jpg" alt="Where's Waldo"  width="50%">
 
+---
+
 Require one template image and one source image.
 
 Template image needs to be **padded** to the same size as source image.

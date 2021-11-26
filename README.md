@@ -2,9 +2,9 @@
 
 ### VGG template matching
 
-<img src="img/waldo.jpg" alt="Where's Waldo"  width="50%">
+-- A Pytorch implementing of [A Deep Learning approach to Template Matching](http://cs231n.stanford.edu/reports/2017/pdfs/817.pdf)
 
-A Pytorch implementing of [A Deep Learning approach to Template Matching](http://cs231n.stanford.edu/reports/2017/pdfs/817.pdf)
+<img src="img/waldo.jpg" alt="Where's Waldo"  width="50%">
 
 Require one template image and one source image.
 

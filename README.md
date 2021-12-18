@@ -6,6 +6,8 @@
 
 -- A Pytorch implementing of [A Deep Learning approach to Template Matching](http://cs231n.stanford.edu/reports/2017/pdfs/817.pdf)
 
+---
+
 Require one template image and one source image.
 
 Template image needs to be **padded** to the same size as source image.

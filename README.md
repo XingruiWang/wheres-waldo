@@ -8,7 +8,7 @@
 
 -- A Pytorch implementing of [A Deep Learning approach to Template Matching](http://cs231n.stanford.edu/reports/2017/pdfs/817.pdf)
 
-##### Description
+#### Description
 
 Require one template image and one source image.
 
@@ -34,7 +34,7 @@ res = net(x, t) # binary map
 
 ### B. CCOEFF template matching (Pseudo label)
 
-##### Description
+#### Description
 
 Require one source image and a folder containing all of the probable apperences of target.
 
